@@ -4161,15 +4161,23 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
         int width = cssWidth > 0 ? (int) (cssWidth * density) : previewContainer.getWidth();
         int height = cssHeight > 0 ? (int) (cssHeight * density) : previewContainer.getHeight();
 
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height);
-        params.leftMargin = x;
-        params.topMargin = y;
-
         Log.d(TAG, "updatePreviewPosition: CSS(" + cssX + "," + cssY + "," + cssWidth + "," + cssHeight +
             ") → device(" + x + "," + y + "," + width + "," + height + ")");
 
         mainExecutor.execute(() -> {
-            previewContainer.setLayoutParams(params);
+            // Update existing layout params in-place to preserve the correct LayoutParams type
+            // (parent may be CoordinatorLayout, not FrameLayout)
+            ViewGroup.LayoutParams currentParams = previewContainer.getLayoutParams();
+            if (currentParams instanceof ViewGroup.MarginLayoutParams) {
+                ViewGroup.MarginLayoutParams marginParams = (ViewGroup.MarginLayoutParams) currentParams;
+                marginParams.width = width;
+                marginParams.height = height;
+                marginParams.leftMargin = x;
+                marginParams.topMargin = y;
+            } else {
+                currentParams.width = width;
+                currentParams.height = height;
+            }
             previewContainer.requestLayout();
         });
     }

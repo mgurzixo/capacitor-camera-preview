@@ -914,6 +914,9 @@ class CameraPreviewWeb extends core.WebPlugin {
         if (!!video && !!_options.opacity)
             video.style.setProperty('opacity', _options.opacity.toString());
     }
+    async updatePosition(_options) {
+        // No-op on web — video element follows CSS layout automatically
+    }
     async setVideoQuality() {
         throw this.unimplemented('setVideoQuality');
     }

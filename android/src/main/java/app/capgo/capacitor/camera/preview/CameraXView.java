@@ -4144,6 +4144,36 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
         }
     }
 
+    /**
+     * Update the preview container position and size without restarting the camera.
+     * Coordinates are in CSS pixels (will be multiplied by density).
+     */
+    public void updatePreviewPosition(float cssX, float cssY, float cssWidth, float cssHeight) {
+        if (previewContainer == null) return;
+
+        WindowManager windowManager = (WindowManager) this.context.getSystemService(Context.WINDOW_SERVICE);
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        windowManager.getDefaultDisplay().getMetrics(displayMetrics);
+        float density = displayMetrics.density;
+
+        int x = (int) (cssX * density);
+        int y = (int) (cssY * density);
+        int width = cssWidth > 0 ? (int) (cssWidth * density) : previewContainer.getWidth();
+        int height = cssHeight > 0 ? (int) (cssHeight * density) : previewContainer.getHeight();
+
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height);
+        params.leftMargin = x;
+        params.topMargin = y;
+
+        Log.d(TAG, "updatePreviewPosition: CSS(" + cssX + "," + cssY + "," + cssWidth + "," + cssHeight +
+            ") → device(" + x + "," + y + "," + width + "," + height + ")");
+
+        mainExecutor.execute(() -> {
+            previewContainer.setLayoutParams(params);
+            previewContainer.requestLayout();
+        });
+    }
+
     private void updateLayoutParams() {
         if (sessionConfig == null) return;
 

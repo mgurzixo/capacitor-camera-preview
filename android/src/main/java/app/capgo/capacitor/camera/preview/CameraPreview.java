@@ -1079,6 +1079,21 @@ public class CameraPreview extends Plugin implements CameraXView.CameraXViewList
     }
 
     @PluginMethod
+    public void updatePosition(PluginCall call) {
+        if (cameraXView == null || !cameraXView.isRunning()) {
+            call.reject("Camera is not running");
+            return;
+        }
+        Float x = call.getFloat("x", -1f);
+        Float y = call.getFloat("y", -1f);
+        Float width = call.getFloat("width", 0f);
+        Float height = call.getFloat("height", 0f);
+        //noinspection DataFlowIssue
+        cameraXView.updatePreviewPosition(x, y, width, height);
+        call.resolve();
+    }
+
+    @PluginMethod
     public void getHorizontalFov(PluginCall call) {
         // CameraX does not provide a simple way to get FoV.
         // This would require Camera2 interop to access camera characteristics.

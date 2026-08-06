@@ -545,6 +545,17 @@ export interface CameraOpacityOptions {
   opacity?: number;
 }
 
+export interface CameraPreviewPositionOptions {
+  /** X position in CSS pixels, relative to the WebView viewport. Use -1 for centered. */
+  x?: number;
+  /** Y position in CSS pixels, relative to the WebView viewport. Use -1 for centered. */
+  y?: number;
+  /** Width in CSS pixels. Use 0 to keep current width. */
+  width?: number;
+  /** Height in CSS pixels. Use 0 to keep current height. */
+  height?: number;
+}
+
 /**
  * Represents safe area insets for devices.
  * Android: Values are expressed in logical pixels (dp) to match JS layout units.
@@ -764,6 +775,16 @@ export interface CameraPreviewPlugin {
    * @since 0.0.1
    */
   setOpacity(options: CameraOpacityOptions): Promise<void>;
+
+  /**
+   * Update the camera preview position and size without restarting the camera.
+   * Useful when the preview container's layout changes (e.g. content appears below it).
+   *
+   * Coordinates are in CSS pixels relative to the WebView viewport.
+   *
+   * @since 8.12.0
+   */
+  updatePosition(options: CameraPreviewPositionOptions): Promise<void>;
 
   /**
    * Stops an ongoing video recording.

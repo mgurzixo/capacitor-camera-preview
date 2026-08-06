@@ -1,5 +1,6 @@
 import { WebPlugin } from '@capacitor/core';
 import type { BarcodeScannerOptions, CameraDevice, CameraPreviewAspectRatio, CameraOpacityOptions, CameraPreviewFlashMode, CameraPreviewOptions, CameraPreviewPictureOptions, CameraPreviewPlugin, CameraSampleOptions, CameraPermissionStatus, DeviceOrientation, GridMode, ExposureMode, WhiteBalanceMode, FlashMode, LensInfo, PermissionRequestOptions, SafeAreaInsets, VideoCodec, VideoStabilizationMode, VideoQuality } from './definitions';
+import { type CameraPreviewPositionOptions } from './definitions';
 export declare class CameraPreviewWeb extends WebPlugin implements CameraPreviewPlugin {
     /**
      *  track which camera is used based on start options
@@ -63,6 +64,7 @@ export declare class CameraPreviewWeb extends WebPlugin implements CameraPreview
     }): Promise<void>;
     flip(): Promise<void>;
     setOpacity(_options: CameraOpacityOptions): Promise<any>;
+    updatePosition(_options: CameraPreviewPositionOptions): Promise<void>;
     setVideoQuality(): Promise<void>;
     getVideoQuality(): Promise<{
         quality: VideoQuality;

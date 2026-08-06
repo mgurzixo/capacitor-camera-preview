@@ -27,7 +27,7 @@ import type {
   VideoStabilizationMode,
   VideoQuality,
 } from './definitions';
-import { DeviceType } from './definitions';
+import { DeviceType, type CameraPreviewPositionOptions } from './definitions';
 
 type WebPermissionState = 'granted' | 'denied' | 'prompt';
 type WebBarcodeDetectorResult = {
@@ -1005,6 +1005,10 @@ export class CameraPreviewWeb extends WebPlugin implements CameraPreviewPlugin {
   async setOpacity(_options: CameraOpacityOptions): Promise<any> {
     const video = document.getElementById(DEFAULT_VIDEO_ID) as HTMLVideoElement;
     if (!!video && !!_options.opacity) video.style.setProperty('opacity', _options.opacity.toString());
+  }
+
+  async updatePosition(_options: CameraPreviewPositionOptions): Promise<void> {
+    // No-op on web — video element follows CSS layout automatically
   }
 
   async setVideoQuality(): Promise<void> {

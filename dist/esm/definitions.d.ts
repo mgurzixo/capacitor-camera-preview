@@ -465,6 +465,14 @@ export interface CameraSampleOptions {
      * @since 8.10.0
      */
     mirrorFrontCamera?: boolean;
+    /**
+     * Maximum dimension (width or height) in pixels for the captured sample.
+     * The image is downscaled to fit within this box while preserving aspect ratio.
+     * 0 means no downscaling (full resolution).
+     * @default 0
+     * @since 8.12.0
+     */
+    maxDimension?: number;
 }
 /**
  * The available flash modes for the camera.

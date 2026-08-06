@@ -2807,7 +2807,7 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
     // Note: We avoid temporary files for EXIF writes. When we transform pixels (resize/crop),
     // we recompress JPEG in-memory and update EXIF info only in the returned JSON, not in the bytes.
 
-    public void captureSample(int quality, final boolean mirrorFrontCamera) {
+    public void captureSample(int quality, final boolean mirrorFrontCamera, int maxDimension) {
         if (sampleImageCapture == null) {
             if (listener != null) {
                 listener.onSampleTakenError("Camera not ready");
@@ -2837,24 +2837,55 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
 
                     @Override
                     public void onCaptureSuccess(@NonNull ImageProxy image) {
-                        //noinspection TryFinallyCanBeTryWithResources
                         try {
-                            // Convert ImageProxy to byte array
                             byte[] bytes = imageProxyToByteArray(image);
-                            if (shouldMirrorFrontCamera(mirrorFrontCamera)) {
+
+                            // Downscale if maxDimension is specified
+                            if (maxDimension > 0) {
+                                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                                if (bitmap != null) {
+                                    int origW = bitmap.getWidth();
+                                    int origH = bitmap.getHeight();
+                                    float scale = Math.min(1f, (float) maxDimension / origW, (float) maxDimension / origH);
+                                    if (scale < 1f) {
+                                        int newW = Math.round(origW * scale);
+                                        int newH = Math.round(origH * scale);
+                                        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, newW, newH, true);
+                                        if (scaled != bitmap) {
+                                            bitmap.recycle();
+                                        }
+                                        if (shouldMirrorFrontCamera(mirrorFrontCamera)) {
+                                            Bitmap mirrored = mirrorBitmapHorizontally(scaled);
+                                            scaled.recycle();
+                                            scaled = mirrored;
+                                        }
+                                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                                        scaled.compress(Bitmap.CompressFormat.JPEG, quality, stream);
+                                        bytes = stream.toByteArray();
+                                        scaled.recycle();
+                                    } else if (shouldMirrorFrontCamera(mirrorFrontCamera)) {
+                                        Bitmap mirrored = mirrorBitmapHorizontally(bitmap);
+                                        bitmap.recycle();
+                                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                                        mirrored.compress(Bitmap.CompressFormat.JPEG, quality, stream);
+                                        bytes = stream.toByteArray();
+                                        mirrored.recycle();
+                                    } else {
+                                        bitmap.recycle();
+                                    }
+                                }
+                            } else if (shouldMirrorFrontCamera(mirrorFrontCamera)) {
                                 Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
                                 if (bitmap != null) {
                                     Bitmap mirrored = mirrorBitmapHorizontally(bitmap);
+                                    bitmap.recycle();
                                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                                     mirrored.compress(Bitmap.CompressFormat.JPEG, quality, stream);
                                     bytes = stream.toByteArray();
-                                    if (mirrored != bitmap) {
-                                        try {
-                                            bitmap.recycle();
-                                        } catch (Exception ignore) {}
-                                    }
+                                    mirrored.recycle();
                                 }
                             }
+
                             String base64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
 
                             if (listener != null) {

@@ -542,7 +542,8 @@ public class CameraPreview extends Plugin implements CameraXView.CameraXViewList
         sampleCallbackId = call.getCallbackId();
         Integer quality = Objects.requireNonNull(call.getInt("quality", 85));
         final boolean mirrorFrontCamera = Boolean.TRUE.equals(call.getBoolean("mirrorFrontCamera"));
-        cameraXView.captureSample(quality, mirrorFrontCamera);
+        Integer maxDimension = call.getInt("maxDimension", 0);
+        cameraXView.captureSample(quality, mirrorFrontCamera, maxDimension);
     }
 
     @PluginMethod

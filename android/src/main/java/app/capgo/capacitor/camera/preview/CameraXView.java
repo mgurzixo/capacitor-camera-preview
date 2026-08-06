@@ -162,6 +162,7 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
     private VideoRecordingCallback currentVideoCallback;
     private PreviewView previewView;
     private GridOverlayView gridOverlayView;
+    private TargetingFrameView targetingFrameView;
     private FrameLayout previewContainer;
     private View focusIndicatorView;
     private long focusIndicatorAnimationId = 0; // Incrementing token to invalidate previous animations
@@ -784,6 +785,15 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
         gridOverlayView.setFocusable(false);
         previewContainer.addView(
             gridOverlayView,
+            new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+        );
+
+        // Create targeting frame overlay (corner brackets for QR scanning)
+        targetingFrameView = new TargetingFrameView(context);
+        targetingFrameView.setClickable(false);
+        targetingFrameView.setFocusable(false);
+        previewContainer.addView(
+            targetingFrameView,
             new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         );
         // Set grid mode after adding to container to ensure proper layout

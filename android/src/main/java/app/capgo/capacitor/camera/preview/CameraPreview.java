@@ -1556,28 +1556,15 @@ public class CameraPreview extends Plugin implements CameraXView.CameraXViewList
                     }
                 } else {
                     computedY = (int) (y * pixelRatio);
-                    // If edge-to-edge is active, JavaScript Y from getBoundingClientRect()
-                    // already includes the system inset (status bar). Only add it when the
-                    // caller did not provide an explicit Y (centered mode, y == -1).
-                    if (isEdgeToEdgeActive && yParam != null) {
-                        // Explicit Y provided — subtract the inset to compensate, since the
-                        // plugin layout system positions relative to the WebView parent which
-                        // already accounts for the inset.
-                        computedY -= webViewTopInset;
-                        Log.d(
-                            "CameraPreview",
-                            "Edge-to-edge explicit-Y correction: Y position " +
-                                (int) (y * pixelRatio) +
-                                " - inset " +
-                                webViewTopInset +
-                                " = " +
-                                computedY
-                        );
-                    } else if (isEdgeToEdgeActive) {
+                    // When edge-to-edge is active and the caller provides an explicit Y
+                    // (from getBoundingClientRect()), that value already includes the
+                    // system inset (status bar). No adjustment needed.
+                    if (isEdgeToEdgeActive && yParam == null) {
+                        // Centered mode (y == -1) — add inset to get absolute screen position
                         computedY += webViewTopInset;
                         Log.d(
                             "CameraPreview",
-                            "Edge-to-edge adjustment: Y position " +
+                            "Edge-to-edge adjustment (centered): Y position " +
                                 (int) (y * pixelRatio) +
                                 " + inset " +
                                 webViewTopInset +

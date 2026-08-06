@@ -1556,9 +1556,24 @@ public class CameraPreview extends Plugin implements CameraXView.CameraXViewList
                     }
                 } else {
                     computedY = (int) (y * pixelRatio);
-                    // If edge-to-edge is active, JavaScript Y is relative to WebView content area
-                    // We need to add the inset to get absolute screen position
-                    if (isEdgeToEdgeActive) {
+                    // If edge-to-edge is active, JavaScript Y from getBoundingClientRect()
+                    // already includes the system inset (status bar). Only add it when the
+                    // caller did not provide an explicit Y (centered mode, y == -1).
+                    if (isEdgeToEdgeActive && yParam != null) {
+                        // Explicit Y provided — subtract the inset to compensate, since the
+                        // plugin layout system positions relative to the WebView parent which
+                        // already accounts for the inset.
+                        computedY -= webViewTopInset;
+                        Log.d(
+                            "CameraPreview",
+                            "Edge-to-edge explicit-Y correction: Y position " +
+                                (int) (y * pixelRatio) +
+                                " - inset " +
+                                webViewTopInset +
+                                " = " +
+                                computedY
+                        );
+                    } else if (isEdgeToEdgeActive) {
                         computedY += webViewTopInset;
                         Log.d(
                             "CameraPreview",

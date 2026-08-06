@@ -2846,7 +2846,9 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
                                 if (bitmap != null) {
                                     int origW = bitmap.getWidth();
                                     int origH = bitmap.getHeight();
-                                    float scale = Math.min(1f, (float) maxDimension / origW, (float) maxDimension / origH);
+                                    float scaleW = (float) maxDimension / origW;
+                                    float scaleH = (float) maxDimension / origH;
+                                    float scale = Math.min(1f, Math.min(scaleW, scaleH));
                                     if (scale < 1f) {
                                         int newW = Math.round(origW * scale);
                                         int newH = Math.round(origH * scale);

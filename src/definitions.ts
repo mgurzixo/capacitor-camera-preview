@@ -1067,6 +1067,19 @@ export interface CameraPreviewPlugin {
   ): Promise<PluginListenerHandle>;
 
   /**
+   * Adds a listener for barcode scan frames where no barcode was found.
+   * Fires at most once per second when the camera sees no QR/barcode.
+   * Use this to reset the UI state (e.g. turn the indicator light red).
+   *
+   * @since 8.12.0
+   * @platform android
+   */
+  addListener(
+    eventName: 'barcodeScanNoResult',
+    listenerFunc: () => void,
+  ): Promise<PluginListenerHandle>;
+
+  /**
    * Adds a listener for non-fatal barcode scanner errors.
    *
    * @since 8.8.0

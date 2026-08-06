@@ -59,6 +59,7 @@ class CameraPreviewWeb extends core.WebPlugin {
         this.barcodeDetector = null;
         this.barcodeScannerTimer = null;
         this.barcodeScannerBusy = false;
+        this.lastNoResultEmitMs = 0;
     }
     async checkPermissions(options) {
         const result = {
@@ -722,6 +723,13 @@ class CameraPreviewWeb extends core.WebPlugin {
                     .filter((barcode) => !!barcode);
                 if (barcodes.length > 0) {
                     this.notifyListeners('barcodeScanned', { barcodes });
+                }
+                else {
+                    const now = Date.now();
+                    if (now - this.lastNoResultEmitMs > 1000) {
+                        this.lastNoResultEmitMs = now;
+                        this.notifyListeners('barcodeScanNoResult', {});
+                    }
                 }
             }
             catch (error) {

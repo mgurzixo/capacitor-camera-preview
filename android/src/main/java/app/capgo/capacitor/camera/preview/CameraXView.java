@@ -132,6 +132,7 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
         void onSampleTaken(String result);
         void onSampleTakenError(String message);
         void onBarcodesScanned(JSONArray barcodes);
+        void onBarcodeScanNoResult();
         void onBarcodeScanError(String message);
         void onVideoRecordingFinished(String filePath, String reason);
         void onCameraStarted(int width, int height, int x, int y);
@@ -201,6 +202,7 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
     private volatile boolean isBarcodeScannerActive = false;
     private volatile boolean isBarcodeFrameProcessing = false;
     private volatile long lastBarcodeFrameAtMs = 0L;
+    private volatile long lastNoResultEmitMs = 0L;
     private volatile long barcodeDetectionIntervalMs = 500L;
     private boolean cameraStartedCallbackSent = false;
 
@@ -1824,6 +1826,8 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
             return;
         }
 
+        long now = System.currentTimeMillis();
+
         isBarcodeFrameProcessing = true;
         lastBarcodeFrameAtMs = now;
 
@@ -1831,7 +1835,17 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
         scanner
             .process(image)
             .addOnSuccessListener((barcodes) -> {
-                if (!isBarcodeScannerActive || barcodes.isEmpty() || listener == null) {
+                if (!isBarcodeScannerActive || listener == null) {
+                    return;
+                }
+
+                if (barcodes.isEmpty()) {
+                    // Throttle no-result events to avoid flooding the JS bridge.
+                    // Emit at most once per second when no barcode is found.
+                    if (now - lastNoResultEmitMs > 1000) {
+                        lastNoResultEmitMs = now;
+                        listener.onBarcodeScanNoResult();
+                    }
                     return;
                 }
 

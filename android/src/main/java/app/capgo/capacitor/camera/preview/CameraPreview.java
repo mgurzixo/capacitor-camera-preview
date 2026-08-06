@@ -2480,6 +2480,11 @@ public class CameraPreview extends Plugin implements CameraXView.CameraXViewList
     }
 
     @Override
+    public void onBarcodeScanNoResult() {
+        notifyListeners("barcodeScanNoResult", new JSObject());
+    }
+
+    @Override
     public void onBarcodeScanError(String message) {
         JSObject data = new JSObject();
         data.put("message", message);

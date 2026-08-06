@@ -52,6 +52,7 @@ export class CameraPreviewWeb extends WebPlugin implements CameraPreviewPlugin {
   private barcodeDetector: any = null;
   private barcodeScannerTimer: number | null = null;
   private barcodeScannerBusy = false;
+  private lastNoResultEmitMs = 0;
 
   constructor() {
     super();
@@ -784,6 +785,12 @@ export class CameraPreviewWeb extends WebPlugin implements CameraPreviewPlugin {
 
         if (barcodes.length > 0) {
           this.notifyListeners('barcodeScanned', { barcodes });
+        } else {
+          const now = Date.now();
+          if (now - this.lastNoResultEmitMs > 1000) {
+            this.lastNoResultEmitMs = now;
+            this.notifyListeners('barcodeScanNoResult', {});
+          }
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

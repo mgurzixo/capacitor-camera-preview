@@ -17,6 +17,7 @@ export declare class CameraPreviewWeb extends WebPlugin implements CameraPreview
     private barcodeDetector;
     private barcodeScannerTimer;
     private barcodeScannerBusy;
+    private lastNoResultEmitMs;
     constructor();
     checkPermissions(options?: {
         disableAudio?: boolean;

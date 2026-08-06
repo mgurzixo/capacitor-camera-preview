@@ -1826,8 +1826,6 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
             return;
         }
 
-        long now = System.currentTimeMillis();
-
         isBarcodeFrameProcessing = true;
         lastBarcodeFrameAtMs = now;
 

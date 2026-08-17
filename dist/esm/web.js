@@ -1280,6 +1280,9 @@ export class CameraPreviewWeb extends WebPlugin {
         // For now, just resolve as a no-op
         console.warn(`Grid mode '${options.gridMode}' is not yet implemented for web platform`);
     }
+    async setTargetingFrameValid(_options) {
+        // Web has no native targeting frame — the DOM overlay handles it. No-op.
+    }
     async getGridMode() {
         // Web implementation - default to none
         return { gridMode: 'none' };

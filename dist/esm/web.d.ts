@@ -133,6 +133,9 @@ export declare class CameraPreviewWeb extends WebPlugin implements CameraPreview
     setGridMode(options: {
         gridMode: GridMode;
     }): Promise<void>;
+    setTargetingFrameValid(_options: {
+        valid: boolean;
+    }): Promise<void>;
     getGridMode(): Promise<{
         gridMode: GridMode;
     }>;

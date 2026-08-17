@@ -4494,6 +4494,17 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
         }
     }
 
+    /**
+     * Flag the targeting-frame corner brackets as valid (green) or neutral
+     * (white). Pure view state — no session rebuild, survives device switches
+     * as long as the preview container (and its overlays) lives.
+     */
+    public void setTargetingFrameValid(boolean valid) {
+        if (targetingFrameView != null) {
+            targetingFrameView.post(() -> targetingFrameView.setValid(valid));
+        }
+    }
+
     public int getPreviewX() {
         if (previewContainer == null) return 0;
 

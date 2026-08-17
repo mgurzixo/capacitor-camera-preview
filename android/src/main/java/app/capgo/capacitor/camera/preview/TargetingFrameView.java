@@ -9,6 +9,7 @@ import android.view.View;
 /**
  * Draws corner brackets (targeting frame) on top of the camera preview.
  * Used for QR code scanning to show the user where to aim.
+ * Brackets turn green while the scanned code is being flagged as valid.
  */
 public class TargetingFrameView extends View {
 
@@ -16,6 +17,9 @@ public class TargetingFrameView extends View {
     private static final float BRACKET_LENGTH_DP = 24f;
     private static final float BRACKET_STROKE_DP = 3f;
     private static final float COVERAGE = 0.7f;
+    // Same green as the web overlay (#66bb6a) and the "Go there" button.
+    private static final int VALID_COLOR = Color.rgb(0x66, 0xBB, 0x6A);
+    private boolean valid = false;
 
     public TargetingFrameView(Context context) {
         super(context);
@@ -27,6 +31,17 @@ public class TargetingFrameView extends View {
         bracketPaint.setShadowLayer(8f, 0f, 0f, 0x80000000);
         float density = context.getResources().getDisplayMetrics().density;
         bracketPaint.setStrokeWidth(BRACKET_STROKE_DP * density);
+    }
+
+    /**
+     * Flag the frame as valid (green brackets) or neutral (white brackets).
+     * Must be called on the UI thread; triggers a redraw when the state changes.
+     */
+    public void setValid(boolean valid) {
+        if (this.valid == valid) return;
+        this.valid = valid;
+        bracketPaint.setColor(valid ? VALID_COLOR : Color.WHITE);
+        invalidate();
     }
 
     @Override

@@ -2601,6 +2601,19 @@ public class CameraPreview extends Plugin implements CameraXView.CameraXViewList
     }
 
     @PluginMethod
+    public void setTargetingFrameValid(PluginCall call) {
+        if (cameraXView == null || !cameraXView.isRunning()) {
+            call.reject("Camera is not running");
+            return;
+        }
+        Boolean valid = call.getBoolean("valid", false);
+        getActivity().runOnUiThread(() -> {
+            cameraXView.setTargetingFrameValid(Boolean.TRUE.equals(valid));
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
     public void getGridMode(PluginCall call) {
         if (cameraXView == null || !cameraXView.isRunning()) {
             call.reject("Camera is not running");

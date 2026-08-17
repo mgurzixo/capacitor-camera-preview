@@ -1484,6 +1484,10 @@ export class CameraPreviewWeb extends WebPlugin implements CameraPreviewPlugin {
     console.warn(`Grid mode '${options.gridMode}' is not yet implemented for web platform`);
   }
 
+  async setTargetingFrameValid(_options: { valid: boolean }): Promise<void> {
+    // Web has no native targeting frame — the DOM overlay handles it. No-op.
+  }
+
   async getGridMode(): Promise<{ gridMode: GridMode }> {
     // Web implementation - default to none
     return { gridMode: 'none' };

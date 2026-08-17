@@ -381,6 +381,7 @@ Documentation for the [uploader](https://github.com/Cap-go/capacitor-uploader)
 * [`setAspectRatio(...)`](#setaspectratio)
 * [`getAspectRatio()`](#getaspectratio)
 * [`setGridMode(...)`](#setgridmode)
+* [`setTargetingFrameValid(...)`](#settargetingframevalid)
 * [`getGridMode()`](#getgridmode)
 * [`checkPermissions(...)`](#checkpermissions)
 * [`requestPermissions(...)`](#requestpermissions)
@@ -389,6 +390,7 @@ Documentation for the [uploader](https://github.com/Cap-go/capacitor-uploader)
 * [`setFlashMode(...)`](#setflashmode)
 * [`flip()`](#flip)
 * [`setOpacity(...)`](#setopacity)
+* [`updatePosition(...)`](#updateposition)
 * [`stopRecordVideo()`](#stoprecordvideo)
 * [`startRecordVideo(...)`](#startrecordvideo)
 * [`setVideoQuality(...)`](#setvideoquality)
@@ -416,6 +418,7 @@ Documentation for the [uploader](https://github.com/Cap-go/capacitor-uploader)
 * [`addListener('screenResize', ...)`](#addlistenerscreenresize-)
 * [`addListener('orientationChange', ...)`](#addlistenerorientationchange-)
 * [`addListener('barcodeScanned', ...)`](#addlistenerbarcodescanned-)
+* [`addListener('barcodeScanNoResult', ...)`](#addlistenerbarcodescannoresult-)
 * [`addListener('barcodeScanError', ...)`](#addlistenerbarcodescanerror-)
 * [`addListener('recordingFinished', ...)`](#addlistenerrecordingfinished-)
 * [`deleteFile(...)`](#deletefile)
@@ -624,6 +627,25 @@ Sets the grid mode of the camera preview overlay.
 --------------------
 
 
+### setTargetingFrameValid(...)
+
+```typescript
+setTargetingFrameValid(options: { valid: boolean; }) => Promise<void>
+```
+
+Flags the targeting-frame corner brackets (QR aiming overlay) as valid
+(green) or neutral (white). Used by QR scanners to confirm a successful
+decode. No-op on platforms without a native targeting frame.
+
+| Param         | Type                             | Description                                      |
+| ------------- | -------------------------------- | ------------------------------------------------ |
+| **`options`** | <code>{ valid: boolean; }</code> | - true = green brackets, false = white brackets. |
+
+**Since:** 8.11.3
+
+--------------------
+
+
 ### getGridMode()
 
 ```typescript
@@ -753,6 +775,26 @@ Sets the opacity of the camera preview.
 | **`options`** | <code><a href="#cameraopacityoptions">CameraOpacityOptions</a></code> | - The opacity options. |
 
 **Since:** 0.0.1
+
+--------------------
+
+
+### updatePosition(...)
+
+```typescript
+updatePosition(options: CameraPreviewPositionOptions) => Promise<void>
+```
+
+Update the camera preview position and size without restarting the camera.
+Useful when the preview container's layout changes (e.g. content appears below it).
+
+Coordinates are in CSS pixels relative to the WebView viewport.
+
+| Param         | Type                                                                                  |
+| ------------- | ------------------------------------------------------------------------------------- |
+| **`options`** | <code><a href="#camerapreviewpositionoptions">CameraPreviewPositionOptions</a></code> |
+
+**Since:** 8.12.0
 
 --------------------
 
@@ -1203,6 +1245,28 @@ Adds a listener for barcode scan results.
 --------------------
 
 
+### addListener('barcodeScanNoResult', ...)
+
+```typescript
+addListener(eventName: 'barcodeScanNoResult', listenerFunc: () => void) => Promise<PluginListenerHandle>
+```
+
+Adds a listener for barcode scan frames where no barcode was found.
+Fires at most once per second when the camera sees no QR/barcode.
+Use this to reset the UI state (e.g. turn the indicator light red).
+
+| Param              | Type                               |
+| ------------------ | ---------------------------------- |
+| **`eventName`**    | <code>'barcodeScanNoResult'</code> |
+| **`listenerFunc`** | <code>() =&gt; void</code>         |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+**Since:** 8.12.0
+
+--------------------
+
+
 ### addListener('barcodeScanError', ...)
 
 ```typescript
@@ -1577,6 +1641,7 @@ Defines the options for capturing a sample frame from the camera preview.
 | ----------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------ |
 | **`quality`**           | <code>number</code>  | The quality of the captured sample, from 0 to 100.                                                                                                                                                                              | <code>85</code>    |        |
 | **`mirrorFrontCamera`** | <code>boolean</code> | If true and the front camera is active, horizontally mirror the captured sample so it matches a selfie-style preview. Rear camera samples are never mirrored. Defaults to false to preserve the previous non-mirrored behavior. | <code>false</code> | 8.10.0 |
+| **`maxDimension`**      | <code>number</code>  | Maximum dimension (width or height) in pixels for the captured sample. The image is downscaled to fit within this box while preserving aspect ratio. 0 means no downscaling (full resolution).                                  | <code>0</code>     | 8.12.0 |
 
 
 #### CameraPermissionStatus
@@ -1626,6 +1691,16 @@ Defines the options for setting the camera preview's opacity.
 | Prop          | Type                | Description                                                                 | Default          |
 | ------------- | ------------------- | --------------------------------------------------------------------------- | ---------------- |
 | **`opacity`** | <code>number</code> | The opacity percentage, from 0.0 (fully transparent) to 1.0 (fully opaque). | <code>1.0</code> |
+
+
+#### CameraPreviewPositionOptions
+
+| Prop         | Type                | Description                                                                      |
+| ------------ | ------------------- | -------------------------------------------------------------------------------- |
+| **`x`**      | <code>number</code> | X position in CSS pixels, relative to the WebView viewport. Use -1 for centered. |
+| **`y`**      | <code>number</code> | Y position in CSS pixels, relative to the WebView viewport. Use -1 for centered. |
+| **`width`**  | <code>number</code> | Width in CSS pixels. Use 0 to keep current width.                                |
+| **`height`** | <code>number</code> | Height in CSS pixels. Use 0 to keep current height.                              |
 
 
 #### RecordingFinishedEvent

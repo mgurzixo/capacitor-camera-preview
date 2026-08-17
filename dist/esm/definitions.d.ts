@@ -656,6 +656,19 @@ export interface CameraPreviewPlugin {
         gridMode: GridMode;
     }): Promise<void>;
     /**
+     * Flags the targeting-frame corner brackets (QR aiming overlay) as valid
+     * (green) or neutral (white). Used by QR scanners to confirm a successful
+     * decode. No-op on platforms without a native targeting frame.
+     *
+     * @param {{ valid: boolean }} options - true = green brackets, false = white brackets.
+     * @returns {Promise<void>} A promise that resolves when the state is applied.
+     * @since 8.11.3
+     * @platform android
+     */
+    setTargetingFrameValid(options: {
+        valid: boolean;
+    }): Promise<void>;
+    /**
      * Gets the current grid mode of the camera preview overlay.
      *
      * @returns {Promise<{ gridMode: GridMode }>} A promise that resolves with the current grid mode.

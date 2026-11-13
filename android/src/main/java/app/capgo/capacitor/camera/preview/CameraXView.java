@@ -738,7 +738,8 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
             previewContainer.setBackgroundColor(Color.TRANSPARENT);
         }
         // Ensure container can receive touch events
-        previewContainer.setClickable(true);
+        // Touch pass-through: the WebView (zik4 scanner) owns pinch-to-zoom.
+        previewContainer.setClickable(false);
         previewContainer.setFocusable(true);
 
         // Disable any potential drawing artifacts that might cause 1px offset
@@ -759,7 +760,8 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
         String aspectMode = sessionConfig != null ? sessionConfig.getAspectMode() : "contain";
         previewView.setScaleType("cover".equals(aspectMode) ? PreviewView.ScaleType.FILL_CENTER : PreviewView.ScaleType.FIT_CENTER);
         // Also make preview view touchable as backup
-        previewView.setClickable(true);
+        // Touch pass-through: the WebView (zik4 scanner) owns pinch-to-zoom.
+        previewView.setClickable(false);
         previewView.setFocusable(true);
 
         // Intentionally no native gesture handling (tap-to-focus, pinch-to-zoom)

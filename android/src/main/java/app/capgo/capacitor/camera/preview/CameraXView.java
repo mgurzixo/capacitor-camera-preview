@@ -2820,165 +2820,30 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
     // we recompress JPEG in-memory and update EXIF info only in the returned JSON, not in the bytes.
 
     public void captureSample(int quality, final boolean mirrorFrontCamera, int maxDimension) {
-        // SSOT is the video (user): grab the PREVIEW bitmap — identical FOV,
-        // crop and orientation to what the user sees. The ImageCapture path
-        // (below) has a WIDER vertical FOV (user-measured: paper 80% of the
-        // feed height = 50% of the capture height) and stays only as
-        // fallback when no preview bitmap is available.
-        if (previewView != null) {
-            Bitmap preview = previewView.getBitmap();
-            if (preview != null && preview.getWidth() > 0 && preview.getHeight() > 0) {
-                // The bitmap IS the displayed frame — send it as-is (exact).
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                preview.compress(Bitmap.CompressFormat.JPEG, quality, stream);
-                byte[] bytes = stream.toByteArray();
-                String base64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
-                if (listener != null) {
-                    listener.onSampleTaken(base64);
-                }
-                return;
-            }
-        }
-        if (sampleImageCapture == null) {
+        // SSOT is the video (user): grab the PREVIEW bitmap — the frame
+        // EXACTLY as displayed. Same FOV, crop and orientation. NO
+        // fallback: if the preview is not rendered, this is an error.
+        if (previewView == null) {
             if (listener != null) {
-                listener.onSampleTakenError("Camera not ready");
+                listener.onSampleTakenError("Preview not available");
             }
             return;
         }
-
-        if (IsOperationRunning("captureSample")) {
-            Log.d(TAG, "captureSample: Ignored because stop is pending");
+        Bitmap preview = previewView.getBitmap();
+        if (preview == null || preview.getWidth() == 0 || preview.getHeight() == 0) {
+            if (listener != null) {
+                listener.onSampleTakenError("Preview not available");
+            }
             return;
         }
-        Log.d(TAG, "captureSample: Starting sample capture with quality: " + quality + ", mirrorFrontCamera: " + mirrorFrontCamera);
-
-        // Target rotation from the SAME source as the preview's crop logic
-        // (accelerometer): keeps captureSample frames consistent with the
-        // (always-upright) preview under all holding angles — a phone
-        // lying flat gives a stale/undefined target otherwise.
-        int captureTargetRotation = getRotationFromAccelerometer();
-        lastCaptureRotation = captureTargetRotation;
-        sampleImageCapture.setTargetRotation(captureTargetRotation);
-
-        boolean dispatched = false;
-        try {
-            sampleImageCapture.takePicture(
-                cameraExecutor,
-                new ImageCapture.OnImageCapturedCallback() {
-                    @Override
-                    public void onError(@NonNull ImageCaptureException exception) {
-                        Log.e(TAG, "captureSample: Sample capture failed", exception);
-                        if (listener != null) {
-                            listener.onSampleTakenError("Sample capture failed: " + exception.getMessage());
-                        }
-                        endOperation("captureSample");
-                    }
-
-                    @Override
-                    public void onCaptureSuccess(@NonNull ImageProxy image) {
-                        try {
-                            int rotationDegrees = image.getImageInfo().getRotationDegrees();
-                            Log.d(TAG, "captureSample: imageInfo rotation=" + rotationDegrees +
-                                " proxyDims=" + image.getWidth() + "x" + image.getHeight());
-                            byte[] bytes = imageProxyToByteArray(image);
-
-                            // Downscale if maxDimension is specified
-                            if (maxDimension > 0) {
-                                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                                if (bitmap != null) {
-                                    Log.d(TAG, "captureSample: decoded bitmap=" + bitmap.getWidth() + "x" + bitmap.getHeight());
-                                    // SSOT is the preview: rotate the capture so it
-                                    // MATCHES WHAT THE USER SEES. Primary source:
-                                    // pixel comparison against previewView.getBitmap
-                                    // (metadata-free). Fallback: CameraX rotationDegrees.
-                                    int previewRot = rotationToMatchPreview(bitmap);
-                                    int rotation = (previewRot >= 0) ? previewRot : rotationDegrees;
-                                    Log.d(TAG, "captureSample: rotation applied=" + rotation +
-                                        " (previewMatch=" + previewRot + ", imageInfo=" + rotationDegrees + ")");
-                                    if (rotation != 0) {
-                                        Matrix matrix = new Matrix();
-                                        matrix.postRotate(rotation);
-                                        Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-                                        if (rotated != bitmap) {
-                                            bitmap.recycle();
-                                        }
-                                        bitmap = rotated;
-                                    }
-                                    int origW = bitmap.getWidth();
-                                    int origH = bitmap.getHeight();
-                                    float scaleW = (float) maxDimension / origW;
-                                    float scaleH = (float) maxDimension / origH;
-                                    float scale = Math.min(1f, Math.min(scaleW, scaleH));
-                                    if (scale < 1f) {
-                                        int newW = Math.round(origW * scale);
-                                        int newH = Math.round(origH * scale);
-                                        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, newW, newH, true);
-                                        if (scaled != bitmap) {
-                                            bitmap.recycle();
-                                        }
-                                        if (shouldMirrorFrontCamera(mirrorFrontCamera)) {
-                                            Bitmap mirrored = mirrorBitmapHorizontally(scaled);
-                                            scaled.recycle();
-                                            scaled = mirrored;
-                                        }
-                                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                                        scaled.compress(Bitmap.CompressFormat.JPEG, quality, stream);
-                                        bytes = stream.toByteArray();
-                                        scaled.recycle();
-                                    } else if (shouldMirrorFrontCamera(mirrorFrontCamera)) {
-                                        Bitmap mirrored = mirrorBitmapHorizontally(bitmap);
-                                        bitmap.recycle();
-                                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                                        mirrored.compress(Bitmap.CompressFormat.JPEG, quality, stream);
-                                        bytes = stream.toByteArray();
-                                        mirrored.recycle();
-                                    } else {
-                                        bitmap.recycle();
-                                    }
-                                }
-                            } else if (shouldMirrorFrontCamera(mirrorFrontCamera)) {
-                                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                                if (bitmap != null) {
-                                    Bitmap mirrored = mirrorBitmapHorizontally(bitmap);
-                                    bitmap.recycle();
-                                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                                    mirrored.compress(Bitmap.CompressFormat.JPEG, quality, stream);
-                                    bytes = stream.toByteArray();
-                                    mirrored.recycle();
-                                }
-                            }
-
-                            String base64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
-
-                            if (listener != null) {
-                                listener.onSampleTaken(base64);
-                            }
-                        } catch (Exception e) {
-                            Log.e(TAG, "captureSample: Error processing sample", e);
-                            if (listener != null) {
-                                listener.onSampleTakenError("Error processing sample: " + e.getMessage());
-                            }
-                        } finally {
-                            image.close();
-                            endOperation("captureSample");
-                        }
-                    }
-                }
-            );
-
-            dispatched = true;
-        } catch (Exception e) {
-            Log.e(TAG, "captureSample: Failed to start sample capture", e);
-            if (listener != null) {
-                listener.onSampleTakenError("Sample capture failed: " + e.getMessage());
-            }
-        } finally {
-            if (!dispatched) {
-                endOperation("captureSample");
-            }
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        preview.compress(Bitmap.CompressFormat.JPEG, quality, stream);
+        byte[] bytes = stream.toByteArray();
+        String base64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
+        if (listener != null) {
+            listener.onSampleTaken(base64);
         }
     }
-
     // Pick the rotation (0/90/180/270) that makes `capture` best match the
     // preview AS THE USER SEES IT (previewView.getBitmap) — metadata-free:
     // compare downscaled luminance over the four rotations. -1 = no preview.

@@ -2823,13 +2823,36 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
         // SSOT is the video (user): grab the PREVIEW bitmap — the frame
         // EXACTLY as displayed. Same FOV, crop and orientation. NO
         // fallback: if the preview is not rendered, this is an error.
+        // getBitmap() requires the MAIN thread — Capacitor plugin methods
+        // run on a bridge thread, so hop and wait (JS awaits the reply).
         if (previewView == null) {
             if (listener != null) {
                 listener.onSampleTakenError("Preview not available");
             }
             return;
         }
-        Bitmap preview = previewView.getBitmap();
+        Bitmap preview;
+        java.util.concurrent.CountDownLatch uiLatch = new java.util.concurrent.CountDownLatch(1);
+        final Bitmap[] holder = new Bitmap[1];
+        Runnable grab = () -> {
+            try {
+                holder[0] = previewView.getBitmap();
+            } catch (Exception e) {
+                Log.e(TAG, "captureSample: getBitmap failed", e);
+            }
+            uiLatch.countDown();
+        };
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            grab.run();
+        } else {
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(grab);
+        }
+        try {
+            uiLatch.await(2, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+        preview = holder[0];
         if (preview == null || preview.getWidth() == 0 || preview.getHeight() == 0) {
             if (listener != null) {
                 listener.onSampleTakenError("Preview not available");

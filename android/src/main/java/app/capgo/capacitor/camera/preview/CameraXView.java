@@ -2850,12 +2850,27 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
                     @Override
                     public void onCaptureSuccess(@NonNull ImageProxy image) {
                         try {
+                            int rotationDegrees = image.getImageInfo().getRotationDegrees();
                             byte[] bytes = imageProxyToByteArray(image);
 
                             // Downscale if maxDimension is specified
                             if (maxDimension > 0) {
                                 Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
                                 if (bitmap != null) {
+                                    // Apply the capture rotation BEFORE downscaling:
+                                    // BitmapFactory ignores EXIF, so without this the
+                                    // JPEG stays sensor-oriented and loses the tag on
+                                    // re-compression — the JS side then receives rotated
+                                    // frames that do not match the (upright) preview.
+                                    if (rotationDegrees != 0) {
+                                        Matrix matrix = new Matrix();
+                                        matrix.postRotate(rotationDegrees);
+                                        Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                                        if (rotated != bitmap) {
+                                            bitmap.recycle();
+                                        }
+                                        bitmap = rotated;
+                                    }
                                     int origW = bitmap.getWidth();
                                     int origH = bitmap.getHeight();
                                     float scaleW = (float) maxDimension / origW;

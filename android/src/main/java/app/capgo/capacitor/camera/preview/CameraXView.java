@@ -2820,6 +2820,25 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
     // we recompress JPEG in-memory and update EXIF info only in the returned JSON, not in the bytes.
 
     public void captureSample(int quality, final boolean mirrorFrontCamera, int maxDimension) {
+        // SSOT is the video (user): grab the PREVIEW bitmap — identical FOV,
+        // crop and orientation to what the user sees. The ImageCapture path
+        // (below) has a WIDER vertical FOV (user-measured: paper 80% of the
+        // feed height = 50% of the capture height) and stays only as
+        // fallback when no preview bitmap is available.
+        if (previewView != null) {
+            Bitmap preview = previewView.getBitmap();
+            if (preview != null && preview.getWidth() > 0 && preview.getHeight() > 0) {
+                // The bitmap IS the displayed frame — send it as-is (exact).
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                preview.compress(Bitmap.CompressFormat.JPEG, quality, stream);
+                byte[] bytes = stream.toByteArray();
+                String base64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
+                if (listener != null) {
+                    listener.onSampleTaken(base64);
+                }
+                return;
+            }
+        }
         if (sampleImageCapture == null) {
             if (listener != null) {
                 listener.onSampleTakenError("Camera not ready");

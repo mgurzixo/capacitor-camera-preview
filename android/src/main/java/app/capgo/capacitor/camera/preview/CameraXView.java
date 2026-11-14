@@ -2833,6 +2833,14 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
         }
         Log.d(TAG, "captureSample: Starting sample capture with quality: " + quality + ", mirrorFrontCamera: " + mirrorFrontCamera);
 
+        // Target rotation from the SAME source as the preview's crop logic
+        // (accelerometer): keeps captureSample frames consistent with the
+        // (always-upright) preview under all holding angles — a phone
+        // lying flat gives a stale/undefined target otherwise.
+        int captureTargetRotation = getRotationFromAccelerometer();
+        lastCaptureRotation = captureTargetRotation;
+        sampleImageCapture.setTargetRotation(captureTargetRotation);
+
         boolean dispatched = false;
         try {
             sampleImageCapture.takePicture(

@@ -2864,7 +2864,7 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
         a.recycle();
         b.recycle();
         int best = 0;
-        float bestDiff = Float.MAX_VALUE;
+        double bestDiff = Double.MAX_VALUE;
         for (int r = 0; r <= 270; r += 90) {
             double sum = 0;
             for (int y = 0; y < S; y++) {

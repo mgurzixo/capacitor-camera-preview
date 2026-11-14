@@ -2868,14 +2868,17 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
                                 Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
                                 if (bitmap != null) {
                                     Log.d(TAG, "captureSample: decoded bitmap=" + bitmap.getWidth() + "x" + bitmap.getHeight());
-                                    // Apply the capture rotation BEFORE downscaling:
-                                    // BitmapFactory ignores EXIF, so without this the
-                                    // JPEG stays sensor-oriented and loses the tag on
-                                    // re-compression — the JS side then receives rotated
-                                    // frames that do not match the (upright) preview.
-                                    if (rotationDegrees != 0) {
+                                    // SSOT is the preview: rotate the capture so it
+                                    // MATCHES WHAT THE USER SEES. Primary source:
+                                    // pixel comparison against previewView.getBitmap
+                                    // (metadata-free). Fallback: CameraX rotationDegrees.
+                                    int previewRot = rotationToMatchPreview(bitmap);
+                                    int rotation = (previewRot >= 0) ? previewRot : rotationDegrees;
+                                    Log.d(TAG, "captureSample: rotation applied=" + rotation +
+                                        " (previewMatch=" + previewRot + ", imageInfo=" + rotationDegrees + ")");
+                                    if (rotation != 0) {
                                         Matrix matrix = new Matrix();
-                                        matrix.postRotate(rotationDegrees);
+                                        matrix.postRotate(rotation);
                                         Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
                                         if (rotated != bitmap) {
                                             bitmap.recycle();
@@ -2955,6 +2958,46 @@ public class CameraXView implements LifecycleOwner, LifecycleObserver {
                 endOperation("captureSample");
             }
         }
+    }
+
+    // Pick the rotation (0/90/180/270) that makes `capture` best match the
+    // preview AS THE USER SEES IT (previewView.getBitmap) — metadata-free:
+    // compare downscaled luminance over the four rotations. -1 = no preview.
+    private int rotationToMatchPreview(Bitmap capture) {
+        Bitmap preview = (previewView != null) ? previewView.getBitmap() : null;
+        if (preview == null) return -1;
+        final int S = 48;
+        Bitmap a = Bitmap.createScaledBitmap(capture, S, S, true);
+        Bitmap b = Bitmap.createScaledBitmap(preview, S, S, true);
+        float[] la = new float[S * S], lb = new float[S * S];
+        for (int y = 0; y < S; y++) {
+            for (int x = 0; x < S; x++) {
+                int pa = a.getPixel(x, y), pb = b.getPixel(x, y);
+                la[y * S + x] = 0.299f * Color.red(pa) + 0.587f * Color.green(pa) + 0.114f * Color.blue(pa);
+                lb[y * S + x] = 0.299f * Color.red(pb) + 0.587f * Color.green(pb) + 0.114f * Color.blue(pb);
+            }
+        }
+        a.recycle();
+        b.recycle();
+        int best = 0;
+        float bestDiff = Float.MAX_VALUE;
+        for (int r = 0; r <= 270; r += 90) {
+            double sum = 0;
+            for (int y = 0; y < S; y++) {
+                for (int x = 0; x < S; x++) {
+                    int sx, sy;
+                    switch (r) {
+                        case 90:  sx = S - 1 - y; sy = x; break;
+                        case 180: sx = S - 1 - x; sy = S - 1 - y; break;
+                        case 270: sx = y; sy = S - 1 - x; break;
+                        default:  sx = x; sy = y; break;
+                    }
+                    sum += Math.abs(la[sy * S + sx] - lb[y * S + x]);
+                }
+            }
+            if (sum < bestDiff) { bestDiff = sum; best = r; }
+        }
+        return best;
     }
 
     private byte[] imageProxyToByteArray(ImageProxy image) {
